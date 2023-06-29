@@ -1,3 +1,4 @@
+import requests
 from tkinter import *
 from tkinter import ttk, messagebox
 
@@ -20,39 +21,51 @@ class Conversor:
         self.__pesos = StringVar()
         self.__dolares.trace('w', self.calcular)
 
-
         self.entry_Dolar=ttk.Entry(mainframe, width=7, textvariable=self.__dolares)
         opts={"ipady":10, "ipadx":10}
         self.entry_Dolar.grid(row=1, column=2, sticky=(W,E))
         ttk.Label(mainframe, text="dólares").grid(row=1, column=3, sticky=W, **opts)
 
         ttk.Label(mainframe,textvariable=self.__pesos).grid(row=2, column=2, sticky=(W,E))
-        
         ttk.Label(mainframe,text="pesos").grid(row=2, column=3, sticky=W)
         ttk.Label(mainframe,text="es equivalente a").grid(row=2, column=0, sticky=E)
-        ttk.Button(mainframe,text="salir").grid(row=3, column=3, sticky=W)
+        ttk.Button(mainframe,text="salir", command=self.salir).grid(row=3, column=3, sticky=W)
 
         for hijo in mainframe.winfo_children():
             hijo.grid_configure(padx=3, pady=3)
 
         self.entry_Dolar.focus()
+
+    def obtener_cotizacion_dolar(self):
+        try:
+            response = requests.get('https://www.dolarsi.com/api/api.php?type=dolar')
+            data = response.json()
+            cotizacion = float(data[0]['casa']['venta'].replace(',', '.'))
+            return cotizacion
+        except:
+            messagebox.showerror(title="Error", message="No se pudo obtener la cotización del dólar")
+            return None
     
     def calcular(self, *args):
         if self.entry_Dolar.get() != "":
             try:
-                valor=float(self.entry_Dolar.get())
-                self.__pesos.set(valor*258.380)
+                valor = float(self.entry_Dolar.get())
+                cotizacion = self.obtener_cotizacion_dolar()
+                if cotizacion is not None:
+                    self.__pesos.set(valor * cotizacion)
             except ValueError:
-                messagebox.showerror(title="Error de tipo", message="Debe Ingresar un valor numerico")
+                messagebox.showerror(title="Error de tipo", message="Debe Ingresar un valor numérico")
                 self.__dolares.set("")
                 self.entry_Dolar.focus()
         else:
             self.__pesos.set("")
 
-        
+    def salir(self):
+        self.__ventana.destroy()
+
     def ejecutar(self):
         self.__ventana.mainloop()
 
 if __name__ == "__main__":
-    ventanta=Conversor()
-    ventanta.ejecutar()
+    ventana=Conversor()
+    ventana.ejecutar()
